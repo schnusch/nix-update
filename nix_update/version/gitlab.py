@@ -52,8 +52,12 @@ def fetch_gitlab_snapshots(url: ParseResult, branch: str) -> List[Version]:
     info(f"fetch {gitlab_url}")
     resp = urllib.request.urlopen(gitlab_url)
     commits = json.load(resp)
+
+    before = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     for commit in commits:
         date = datetime.strptime(commit["committed_date"], "%Y-%m-%dT%H:%M:%S.000%z")
         date -= date.utcoffset()  # type: ignore[operator]
-        return [Version(date.strftime("unstable-%Y-%m-%d"), rev=commit["id"])]
+        if date < before.replace(tzinfo=date.tzinfo):
+            return [Version(date.strftime("unstable-%Y-%m-%d"), rev=commit["id"])]
+
     return []
