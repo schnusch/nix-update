@@ -7,6 +7,7 @@ from xml.etree.ElementTree import Element
 
 from ..errors import VersionError
 from ..utils import info
+from .git import fetch_git_snapshots
 from .version import Version
 
 
@@ -59,4 +60,12 @@ def fetch_github_snapshots(url: ParseResult, branch: str) -> List[Version]:
         date = updated.text.split("T", maxsplit=1)[0]
         return [Version(f"unstable-{date}", rev=commit)]
 
-    return []
+    git_url = ParseResult(
+        url.scheme,
+        url.netloc,
+        path=f"/{owner}/{repo}.git",
+        params="",
+        query="",
+        fragment="",
+    )
+    return fetch_git_snapshots(git_url, branch)

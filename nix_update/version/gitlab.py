@@ -3,10 +3,11 @@ import re
 import urllib.request
 from datetime import datetime
 from typing import List
-from urllib.parse import ParseResult, quote_plus
+from urllib.parse import ParseResult, quote_plus, unquote
 
 from ..errors import VersionError
 from ..utils import info
+from .git import fetch_git_snapshots
 from .version import Version
 
 GITLAB_API = re.compile(
@@ -56,4 +57,13 @@ def fetch_gitlab_snapshots(url: ParseResult, branch: str) -> List[Version]:
         date = datetime.strptime(commit["committed_date"], "%Y-%m-%dT%H:%M:%S.000%z")
         date -= date.utcoffset()  # type: ignore[operator]
         return [Version(date.strftime("unstable-%Y-%m-%d"), rev=commit["id"])]
-    return []
+
+    git_url = ParseResult(
+        url.scheme,
+        url.netloc,
+        path=f"/{unquote(project_id)}.git",
+        params="",
+        query="",
+        fragment="",
+    )
+    return fetch_git_snapshots(git_url, branch)

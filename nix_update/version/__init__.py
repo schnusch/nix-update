@@ -5,6 +5,7 @@ from urllib.parse import ParseResult, urlparse
 
 from ..errors import VersionError
 from .crate import fetch_crate_versions
+from .git import fetch_git_snapshots
 from .github import fetch_github_snapshots, fetch_github_versions
 from .gitlab import fetch_gitlab_snapshots, fetch_gitlab_versions
 from .pypi import fetch_pypi_versions
@@ -35,6 +36,7 @@ fetchers: List[Callable[[ParseResult], List[Version]]] = [
 branch_snapshots_fetchers: List[Callable[[ParseResult, str], List[Version]]] = [
     fetch_github_snapshots,
     fetch_gitlab_snapshots,
+    fetch_git_snapshots,
 ]
 
 
