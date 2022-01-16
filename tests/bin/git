@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -eu
+if [[ ${3-} == remote && ${4-} == add && ${5-} == origin ]]; then
+    set -- "${@:1:5}" "$GIT_FAKE_REPO"
+fi
+export PATH="$ORIG_PATH"
+exec git "$@"
