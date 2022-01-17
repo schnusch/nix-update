@@ -32,7 +32,9 @@ fetchers: List[Callable[[ParseResult], List[Version]]] = [
     fetch_sourcehut_versions,
 ]
 
-branch_snapshots_fetchers: List[Callable[[ParseResult, str], List[Version]]] = [
+branch_snapshots_fetchers: List[
+    Callable[[ParseResult, str, Optional[str]], List[Version]]
+] = [
     fetch_github_snapshots,
     fetch_gitlab_snapshots,
 ]
@@ -60,6 +62,7 @@ def fetch_latest_version(
     preference: VersionPreference,
     version_regex: str,
     branch: Optional[str] = None,
+    before: Optional[str] = None,
 ) -> Version:
     url = urlparse(url_str)
 

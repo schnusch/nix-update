@@ -2,6 +2,8 @@ import argparse
 import os
 import sys
 import tempfile
+from datetime import datetime
+from functools import partial
 from typing import NoReturn, Optional
 
 from .eval import Package, eval_attr
@@ -59,6 +61,13 @@ def parse_args(args: list[str]) -> Options:
         help="Set filename where nix-update will update version/hash",
         default=None,
     )
+    parser.add_argument(
+        "--before",
+        nargs="?",
+        help="update to a commit before YYYY-MM-DD, only used if --version=branch is given",
+        type=partial(datetime.strptime, format="%Y-%m-%d"),
+        const=datetime.utcnow(),
+    )
     parser.add_argument("attribute", help="Attribute name within the file evaluated")
     a = parser.parse_args(args)
     return Options(
@@ -70,6 +79,7 @@ def parse_args(args: list[str]) -> Options:
         shell=a.shell,
         version=a.version,
         version_preference=VersionPreference.from_str(a.version),
+        before=a.before and a.before.strftime("%F"),
         attribute=a.attribute,
         test=a.test,
         version_regex=a.version_regex,

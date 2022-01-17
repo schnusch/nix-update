@@ -10,6 +10,7 @@ class Options:
     version: str = "stable"
     version_preference: VersionPreference = VersionPreference.STABLE
     version_regex: str = "(.*)"
+    before: Optional[str] = None
     import_path: str = "./."
     override_filename: Optional[str] = None
     commit: bool = False

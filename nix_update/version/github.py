@@ -1,8 +1,7 @@
 import re
 import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import datetime
-from typing import List
+from typing import List, Optional
 from urllib.parse import ParseResult, urlparse
 from xml.etree.ElementTree import Element
 
@@ -37,7 +36,9 @@ def fetch_github_versions(url: ParseResult) -> List[Version]:
     return [version_from_entry(x) for x in releases]
 
 
-def fetch_github_snapshots(url: ParseResult, branch: str) -> List[Version]:
+def fetch_github_snapshots(
+    url: ParseResult, branch: str, before: Optional[str]
+) -> List[Version]:
     if url.netloc != "github.com":
         return []
     parts = url.path.split("/")
@@ -49,7 +50,6 @@ def fetch_github_snapshots(url: ParseResult, branch: str) -> List[Version]:
     tree = ET.fromstring(resp.read())
     commits = tree.findall(".//{http://www.w3.org/2005/Atom}entry")
 
-    before = datetime.utcnow().strftime("%Y-%m-%d")
     for entry in commits:
         link = entry.find("{http://www.w3.org/2005/Atom}link")
         updated = entry.find("{http://www.w3.org/2005/Atom}updated")
@@ -59,7 +59,7 @@ def fetch_github_snapshots(url: ParseResult, branch: str) -> List[Version]:
         url = urlparse(link.attrib["href"])
         commit = url.path.rsplit("/", maxsplit=1)[-1]
         date = updated.text.split("T", maxsplit=1)[0]
-        if date < before:
+        if before is None or date < before:
             return [Version(f"unstable-{date}", rev=commit)]
 
     return []

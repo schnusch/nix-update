@@ -129,11 +129,9 @@ def update_npm_deps_hash(opts: Options, filename: str, current_hash: str) -> Non
     replace_hash(filename, current_hash, target_hash)
 
 
-def update_version(
-    package: Package, version: str, preference: VersionPreference, version_regex: str
-) -> bool:
-    if preference == VersionPreference.FIXED:
-        new_version = Version(version)
+def update_version(package: Package, opts: Options) -> bool:
+    if opts.version_preference == VersionPreference.FIXED:
+        new_version = Version(opts.version)
     else:
         if not package.url:
             if package.urls:
@@ -142,17 +140,20 @@ def update_version(
                 raise UpdateError(
                     "Could not find a url in the derivations src attribute"
                 )
-        version
-        if preference != VersionPreference.BRANCH:
+        if opts.version_preference != VersionPreference.BRANCH:
             branch = None
-        elif version == "branch":
+        elif opts.version == "branch":
             # fallback
             branch = "HEAD"
         else:
-            assert version.startswith("branch=")
-            branch = version[7:]
+            assert opts.version.startswith("branch=")
+            branch = opts.version[7:]
         new_version = fetch_latest_version(
-            package.url, preference, version_regex, branch
+            package.url,
+            opts.version_preference,
+            opts.version_regex,
+            branch,
+            opts.before,
         )
     package.new_version = new_version
     position = package.version_position
@@ -172,9 +173,7 @@ def update(opts: Options) -> Package:
     update_hash = True
 
     if opts.version_preference != VersionPreference.SKIP:
-        update_hash = update_version(
-            package, opts.version, opts.version_preference, opts.version_regex
-        )
+        update_hash = update_version(package, opts)
 
     if package.hash and update_hash:
         update_src_hash(opts, package.filename, package.hash)

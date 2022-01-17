@@ -2,7 +2,7 @@ import json
 import re
 import urllib.request
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from urllib.parse import ParseResult, quote_plus
 
 from ..errors import VersionError
@@ -42,7 +42,9 @@ def fetch_gitlab_versions(url: ParseResult) -> List[Version]:
     return releases
 
 
-def fetch_gitlab_snapshots(url: ParseResult, branch: str) -> List[Version]:
+def fetch_gitlab_snapshots(
+    url: ParseResult, branch: str, before: Optional[str]
+) -> List[Version]:
     match = GITLAB_API.match(url.geturl())
     if not match:
         return []
@@ -53,11 +55,11 @@ def fetch_gitlab_snapshots(url: ParseResult, branch: str) -> List[Version]:
     resp = urllib.request.urlopen(gitlab_url)
     commits = json.load(resp)
 
-    before = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    beforedt = None if before is None else datetime.strptime(before, "%Y-%m-%d")
     for commit in commits:
         date = datetime.strptime(commit["committed_date"], "%Y-%m-%dT%H:%M:%S.000%z")
         date -= date.utcoffset()  # type: ignore[operator]
-        if date < before.replace(tzinfo=date.tzinfo):
+        if beforedt is None or date < beforedt.replace(tzinfo=date.tzinfo):
             return [Version(date.strftime("unstable-%Y-%m-%d"), rev=commit["id"])]
 
     return []
