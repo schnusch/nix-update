@@ -62,6 +62,13 @@ def get_latest_snapshots_from_git(
         if log:
             date, commit = log.split(maxsplit=1)
             return [Version(f"unstable-{date}", rev=commit)]
+        if (
+            run(
+                ["git", "-C", git_dir, "rev-parse", "--is-shallow-repository"]
+            ).stdout.strip()
+            == "false"
+        ):
+            return []
         run(
             [
                 "git",
@@ -74,7 +81,6 @@ def get_latest_snapshots_from_git(
             ],
             stdout=None,
         )
-        # TODO break if nothing was fetched
 
 
 def fetch_git_snapshots(url: ParseResult, branch: str) -> List[Version]:
