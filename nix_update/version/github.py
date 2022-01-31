@@ -7,7 +7,7 @@ from xml.etree.ElementTree import Element
 
 from ..errors import VersionError
 from ..utils import info
-from .git import fetch_git_snapshots
+from .git import FetchGitFallback
 from .version import Version
 
 
@@ -68,4 +68,4 @@ def fetch_github_snapshots(url: ParseResult, branch: str) -> List[Version]:
         query="",
         fragment="",
     )
-    return fetch_git_snapshots(git_url, branch)
+    raise FetchGitFallback(git_url)

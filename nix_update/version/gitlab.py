@@ -7,7 +7,7 @@ from urllib.parse import ParseResult, quote_plus, unquote
 
 from ..errors import VersionError
 from ..utils import info
-from .git import fetch_git_snapshots
+from .git import FetchGitFallback
 from .version import Version
 
 GITLAB_API = re.compile(
@@ -66,4 +66,4 @@ def fetch_gitlab_snapshots(url: ParseResult, branch: str) -> List[Version]:
         query="",
         fragment="",
     )
-    return fetch_git_snapshots(git_url, branch)
+    raise FetchGitFallback(git_url)

@@ -1,11 +1,10 @@
 import re
-from functools import partial
 from typing import Callable, List, Optional
-from urllib.parse import ParseResult, urlparse
+from urllib.parse import ParseResult, urlparse, urlunparse
 
 from ..errors import VersionError
 from .crate import fetch_crate_versions
-from .git import fetch_git_snapshots
+from .git import FetchGitFallback, fetch_git_snapshots
 from .github import fetch_github_snapshots, fetch_github_versions
 from .gitlab import fetch_gitlab_snapshots, fetch_gitlab_versions
 from .pypi import fetch_pypi_versions
@@ -36,7 +35,6 @@ fetchers: List[Callable[[ParseResult], List[Version]]] = [
 branch_snapshots_fetchers: List[Callable[[ParseResult, str], List[Version]]] = [
     fetch_github_snapshots,
     fetch_gitlab_snapshots,
-    fetch_git_snapshots,
 ]
 
 
@@ -57,6 +55,27 @@ def is_unstable(version: Version, extracted: str) -> bool:
     return re.search(pattern, extracted, re.IGNORECASE) is not None
 
 
+def fetch_latest_branch(
+    url: ParseResult,
+    branch: Optional[str],
+) -> Version:
+    assert branch is not None
+
+    try:
+        for fetcher in branch_snapshots_fetchers:
+            versions = fetcher(url, branch)
+            if versions:
+                return versions[0]
+    except FetchGitFallback as e:
+        url = e.url
+
+    versions = fetch_git_snapshots(url, branch)
+    if versions:
+        return versions[0]
+
+    raise VersionError(f"Cannot find a git commit for {branch} in {urlunparse(url)}.")
+
+
 def fetch_latest_version(
     url_str: str,
     preference: VersionPreference,
@@ -64,13 +83,12 @@ def fetch_latest_version(
     branch: Optional[str] = None,
 ) -> Version:
     url = urlparse(url_str)
+    if preference == VersionPreference.BRANCH:
+        return fetch_latest_branch(url, branch)
 
     unstable: List[str] = []
     filtered: List[str] = []
-    used_fetchers = fetchers
-    if preference == VersionPreference.BRANCH:
-        used_fetchers = [partial(f, branch=branch) for f in branch_snapshots_fetchers]
-    for fetcher in used_fetchers:
+    for fetcher in fetchers:
         versions = fetcher(url)
         if versions == []:
             continue

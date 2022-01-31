@@ -6,6 +6,13 @@ from ..utils import run
 from .version import Version
 
 
+class FetchGitFallback(Exception):
+    url: ParseResult
+
+    def __init__(self, url: ParseResult):
+        self.url = url
+
+
 def init_git(git_dir: str, url: str) -> None:
     run(["git", "init", "-q", git_dir], stdout=None)
     run(
